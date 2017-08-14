@@ -2,7 +2,7 @@
 #include <math.h>
 #include <vector>
 
-int Hnum, Nnum, Gnum;					    // Historical number initialization, with the same for nodes
+int Hnum, Nnum, Gnum, gen;			    // Historical number initialization, with the same for nodes
 int struct_prob = 25, weight_prob = 50;		    // Pobabilities of mutation
 bool verbose = false;				    // Verbosity level of the algorithm
 
@@ -78,8 +78,9 @@ class dendrite {				    // A dendrite is a connection between nodes
 
 class genome {					    // A genome is a collenction of nodes and dendrites
     public:
-	int const ID = Gnum;
-	int generation,specie;
+	int const ID = Gnum, generation = gen;
+	int specie;
+	float fitness;
 	std::vector<node*> cells;		    // First, the nodes
 	std::vector<dendrite> dendrites;	    // Then the dendrites, also used as building instructions
 	int first_output,first_hidden;		    // Delimiters to categorise the nodes (input/output/hidden)
@@ -89,7 +90,7 @@ class genome {					    // A genome is a collenction of nodes and dendrites
 	void mutate_weight();			    // Mutate weight inside the genome
 	void mutate_struct();			    // Mutate the structure of the genome
 
-	std::vector<std::vector<int>> test_input(std::vector<std::vector<int>>);	// Test an input, VERY experimental
+	std::vector<std::vector<int>> test_input(std::vector<std::vector<int>>);	// Test an input
 };
 
 
@@ -145,3 +146,20 @@ std::vector<std::vector<int>> genome::test_input(std::vector<std::vector<int>> I
     };
     return OU;
 };
+
+
+///////////////////////////////////////////////////////////////
+
+
+float calc_fit(std::vector<std::vector<int>> ref, std::vector<std::vector<int>> result) {
+    int n = ref.size(), out = ref[0].size();
+    float fitness = 4;
+    for (int i = 0; i < n; ++i) {
+	int sum = 0;
+	for (int j = 0; j < out; ++j) {
+	    sum = sum + ref[i][j] - result[i][j];
+	};
+	fitness = fitness - std::sqrt(pow(sum,2));
+    };
+    return fitness;
+}
