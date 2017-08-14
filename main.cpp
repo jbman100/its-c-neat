@@ -1,6 +1,8 @@
 #include <iostream>
 #include "tools.h"
 
+std::vector<std::vector<int>> reference {{1},{1},{0},{0}};
+
 int main() {					    // Defines a network acting as a XOR gate for experimental purposes
     node* in1 = new node (0,'i');
     node* in2 = new node (0,'i');
@@ -20,7 +22,7 @@ int main() {					    // Defines a network acting as a XOR gate for experimental 
     genome test (nod,den,2,3);			    // Pipe it into a genome
     test.build();				    // And build the corresponding network
 
-    std::vector<std::vector<int>> vec;
+    std::vector<std::vector<int>> vec, ans;
     int query;
     for (int j = 0; j < 4; ++j) {
 	std::vector<int> tmp;
@@ -33,10 +35,11 @@ int main() {					    // Defines a network acting as a XOR gate for experimental 
     };
     std::cout << "\n";
 
-    
-    reckon(vec,test.test_input(vec));		    // Output the result
+    ans = test.test_input(vec);
+    reckon(vec,ans);		    // Output the result
     //stat_gen(test);
     std::cout << std::endl;
+    std::cout << "Fitness: " << calc_fit(reference,ans) << std::endl;
 
     return 0;
 };
