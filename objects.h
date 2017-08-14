@@ -2,18 +2,29 @@
 #include <math.h>
 #include <vector>
 
-int Hnum, Nnum;					    // Historical number initialization, with the same for nodes
+int Hnum, Nnum, Gnum;					    // Historical number initialization, with the same for nodes
 int struct_prob = 25, weight_prob = 50;		    // Pobabilities of mutation
 bool verbose = false;				    // Verbosity level of the algorithm
+
+
+///////////////////////////////////////////////////////////////
 
 
 class node {					    // Defines nodes adapted to the issue at hand
     public:
 	int const number = Nnum;		    // This number is just an identifier, having no other purpose
 	int value;				    // Value is relative to the input and will be calculated later
-	bool evaluated = false;			    // This bool prevents calculating a nod's value multiple times
+	bool evaluated = false, input, output;	    // This bool prevents calculating a nod's value multiple times
 	float bias;				    // The node's bias
-	node(float b) : bias (b) {++Nnum;};
+	node(float b, char c) : bias (b) {
+	    ++Nnum;
+	    if (c == 'i') {
+		input = true;
+	    }
+	    if (c == 'o') {
+		output = true;
+	    };
+	};
 
 	std::vector<std::pair<node*,float>> peers;  // This vector holds information about the NE structure
 	float transfer(float);			    // The transfer function on the node
@@ -31,6 +42,9 @@ float node::transfer(float input) {
 
 float node::get_value(bool verbose) {
     if (evaluated) {				    // If previously evaluated: just output the value
+	if (verbose) {
+	    std::cout << "Node n:" << node::number << " called.\n";
+	};
 	return value;
     } else {
 	for (int i = 0; i < (int)peers.size(); ++i) {
@@ -45,6 +59,9 @@ float node::get_value(bool verbose) {
 };
 
 
+///////////////////////////////////////////////////////////////
+
+
 class dendrite {				    // A dendrite is a connection between nodes
     public:
 	int num;				    // This is the historical number used to speciate genomes
@@ -56,18 +73,23 @@ class dendrite {				    // A dendrite is a connection between nodes
 };
 
 
+///////////////////////////////////////////////////////////////
+
+
 class genome {					    // A genome is a collenction of nodes and dendrites
     public:
+	int const ID = Gnum;
+	int generation,specie;
 	std::vector<node*> cells;		    // First, the nodes
-	int first_output,first_hidden;		    // Delimiters to categorise the nodes (input/output/hidden)
 	std::vector<dendrite> dendrites;	    // Then the dendrites, also used as building instructions
-	genome(std::vector<node*> c, std::vector<dendrite> den) : cells(c), dendrites(den) {};
+	int first_output,first_hidden;		    // Delimiters to categorise the nodes (input/output/hidden)
+	genome(std::vector<node*> c, std::vector<dendrite> den, int fo, int fh) : cells(c), dendrites(den), first_output(fo), first_hidden(fh) {++Gnum;};
 	
 	void build();				    // Build the network according to the dendrites information
 	void mutate_weight();			    // Mutate weight inside the genome
 	void mutate_struct();			    // Mutate the structure of the genome
 
-	std::vector<int> test_input(std::vector<int>);	// Test an input, VERY experimental
+	std::vector<std::vector<int>> test_input(std::vector<std::vector<int>>);	// Test an input, VERY experimental
 };
 
 
@@ -105,15 +127,21 @@ void genome::mutate_weight() {			    // Unfinished
     };
 };
 
-std::vector<int> genome::test_input(std::vector<int> list) {
-    int n = list.size();			    // Supposes that the input list is equal in length
-    for (int i = 0; i<n; ++i) {			    // to the number of inputs, and assign them values
-	(*genome::cells[i]).value = list[i];
-	(*genome::cells[i]).evaluated = true;	    // Flag to avoid calculationg an inputs value
+std::vector<std::vector<int>> genome::test_input(std::vector<std::vector<int>> IN) {
+    std::vector<std::vector<int>> OU;
+    for (int k = 0; k < (int)IN.size(); ++k) {
+	std::vector<int> tmp;
+	for (int i = 0; i < first_output; ++i) {	    // This supposes that the list is equal in length
+	    (*genome::cells[i]).value = IN[k][i];	    // to the number of inputs, and assign them values
+	    (*genome::cells[i]).evaluated = true;	    // Flag to avoid calculating an inputs value
+	};
+	for (int i = first_output; i < first_hidden; ++i) {
+	    tmp.push_back((*genome::cells[i]).get_value(verbose));
+	};
+	OU.push_back(tmp);
+	for (int i = 0; i < (int)genome::cells.size(); ++i) {
+	genome::cells[i]->evaluated = false;
+	};
     };
-    int N = genome::cells.size();		    // For each remaining cell, recursively calculate an input
-    for (int i = n; i<N; ++i) {
-	(*genome::cells[i]).get_value(verbose);
-    };
-    return std::vector<int> {(*genome::cells[2]).value}; // Experimental bit
-}
+    return OU;
+};
