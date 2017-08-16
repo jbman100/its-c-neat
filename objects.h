@@ -2,7 +2,7 @@
 #include <math.h>
 #include <vector>
 
-int Hnum, Gnum, gen;			    // Historical number initialization, with the same for nodes
+int Hnum, gid, genid;			    // Historical number initialization, with the same for nodes
 int struct_prob = 25, weight_prob = 50;		    // Pobabilities of mutation
 bool verbose = false;				    // Verbosity level of the algorithm
 
@@ -55,11 +55,11 @@ float node::get_value(bool verbose) {
 
 class dendrite {				    // A dendrite is a connection between nodes
     public:
-	int num;				    // This is the historical number used to speciate genomes
+	int const historical_num = Hnum;	    // This is the historical number used to speciate genomes
 	int origin,dest;
 	float weight;				    // The connection's weight
 	bool enabled;
-	dendrite(int n, int o, int d, float w, bool e) : num(n), origin(o), dest(d), weight(w), enabled(e) {};
+	dendrite(int o, int d, float w, bool e) : origin(o), dest(d), weight(w), enabled(e) {++Hnum;};
 };
 
 
@@ -68,13 +68,13 @@ class dendrite {				    // A dendrite is a connection between nodes
 
 class genome {					    // A genome is a collenction of nodes and dendrites
     public:
-	int const ID = Gnum, generation = gen;
+	int const ID = gid, generation = genid;
 	int specie;
-	float * fitness = new float;
+	float fitness;
 	std::vector<node*> cells;		    // First, the nodes
 	std::vector<dendrite> dendrites;	    // Then the dendrites, also used as building instructions
-	int first_output = input_nb ,first_hidden = input_nb + output_nb;		    // Delimiters to categorise the nodes (input/output/hidden)
-	genome(std::vector<node*> c, std::vector<dendrite> den) : cells(c), dendrites(den) {++Gnum;};
+	int first_output = input_nb ,first_hidden = input_nb + output_nb;// Delimiters to categorise the nodes (input/output/hidden)
+	genome(std::vector<node*> c, std::vector<dendrite> den) : cells(c), dendrites(den) {++gid;};
 	
 	void build();				    // Build the network according to the dendrites information
 	void mutate_weight();			    // Mutate weight inside the genome
@@ -102,25 +102,25 @@ void genome::build() {
 };
 
 
-void genome::mutate_weight() {			    // Unfinished
+void mutate_weight(genome* specimen) {			    // Unfinished
     int instance;
-    int index_conn = dendrites.size();
-    for (int i = first_output; i < first_hidden; ++i) {
+    int index_conn = specimen->dendrites.size();
+    for (int i = specimen->first_output; i < specimen->first_hidden; ++i) {
 	instance = rand() %100;
 	if (instance < weight_prob) {
-	    (*cells[i]).bias = (float)(rand() %100)/100;
+	    specimen->cells[i]->bias = 20 - (float)(rand() %200)/5;
 	};
     };
-    for (int i = first_hidden; i < (int)cells.size(); ++i) {
+    for (int i = specimen->first_hidden; i < (int)specimen->cells.size(); ++i) {
 	instance = rand() %100;
 	if (instance < weight_prob) {
-	    (*cells[i]).bias = (float)(rand() %100)/100;
+	    specimen->cells[i]->bias = 20 - (float)(rand() %200)/5;
 	};
     };
     for (int i = 0; i < index_conn; ++i) {
 	instance = rand() %100;
 	if (instance < weight_prob) {
-	    dendrites[i].weight = (float)(rand() %100)/100;
+	    specimen->dendrites[i].weight = 20 - (float)(rand() %200)/5;
 	};
     };
 };
@@ -165,10 +165,6 @@ float calc_fit(std::vector<std::vector<int>> ref, std::vector<std::vector<int>> 
 ///////////////////////////////////////////////////////////////
 
 
-genome* genome_factory(std::vector<node*> nod, std::vector<dendrite> den) {
-    return new genome (nod,den);
-}
-
 std::vector<node*> copy_cells(std::vector<node*> original) {
     std::vector<node*> out;
     int n = original.size();
@@ -180,13 +176,11 @@ std::vector<node*> copy_cells(std::vector<node*> original) {
 
 
 std::vector<dendrite> cross(std::vector<dendrite> d1, std::vector<dendrite> d2){
-    std::cout << "Initated dendrite crossing\n";
     std::vector<dendrite> d3;
     int n1 = d1.size(), n2 = d2.size();
     int p1 = 0, p2 =0;
     while (p1 < n1 and p2 < n2) {
-	if (d1[p1].num == d2[p2].num) {
-	    std::cout << "Case 1\n";
+	if (d1[p1].historical_num == d2[p2].historical_num) {
 	    int r = std::rand();
 	    if (r%2 == 1) {
 		d3.push_back(d1[p1]);
@@ -196,13 +190,11 @@ std::vector<dendrite> cross(std::vector<dendrite> d1, std::vector<dendrite> d2){
 	    ++p1;
 	    ++p2;
 	};
-	if (d1[p1].num > d2[p2].num) {
-	    std::cout << "Case 2\n";
+	if (d1[p1].historical_num > d2[p2].historical_num) {
 	    d3.push_back(d2[p2]);
 	    ++p2;
 	};
-	if (d1[p1].num < d2[p2].num) {
-	    std::cout << "Case 3\n";
+	if (d1[p1].historical_num < d2[p2].historical_num) {
 	    d3.push_back(d1[p1]);
 	    ++p1;
 	};
@@ -215,30 +207,20 @@ std::vector<dendrite> cross(std::vector<dendrite> d1, std::vector<dendrite> d2){
 	d3.push_back(d2[p2]);
 	++p2;
     };
-
-    std::cout << "Crossing done.\n";
     return d3;
 };
 
 genome* breed(genome *g1, genome *g2) {
-    std::cout << "Initated breeding between genome " << g1->ID
-	      << " and genome " << g2->ID << "->\n";
-    if (*g1->fitness < *g2->fitness) {
-	std::cout << "Swapping genomes ...\n";
+    if (g1->fitness < g2->fitness) {
 	return breed(g2,g1);
     };
     std::vector<node*> g3_nod {};
     std::vector<dendrite> g3_den {};
-    std::cout << "Generated vectors\n";
-    if (g1->cells.size() > g2->cells.size()) {
-	std::cout << "Giving the new genome g" << g2->ID << " cells...\n";
+    if (g1->cells.size() < g2->cells.size()) {
 	g3_nod = copy_cells(g2->cells);
     } else {
-	std::cout << "Giving the new genome g" << g1->ID << " cells...\n";
 	g3_nod = copy_cells(g1->cells);
     };
-    std::cout << "Cells attributed. Crossing...\n";
     g3_den = cross(g1->dendrites,g2->dendrites);
-    std::cout << "New genome added to species 0.\n";
-    return genome_factory(g3_nod,g3_den);
+    return new genome (g3_nod,g3_den);
 };
