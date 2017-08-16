@@ -2,6 +2,7 @@
 #include <iostream>
 #include "environment.h"
 
+
 void stat_den(dendrite obsc) {			    // Status of a dendrite
     if (obsc.enabled) {
 	std::cout << "Dendrite number " << obsc.historical_num 
@@ -14,6 +15,7 @@ void stat_den(dendrite obsc) {			    // Status of a dendrite
 	    << obsc.historical_num << " is disabled.\n";
     };
 };
+
 
 void stat_node(node* obsc) {			    // Status of a node
     std::cout << obsc->number << ": cell" ;
@@ -31,17 +33,18 @@ void stat_node(node* obsc) {			    // Status of a node
     };
 };
 
+
 void stat_gen(genome* obsc) {			    // Status of a genome
     std::cout << "\nGetting the status of genome, ID n: " << obsc->ID << "...\n";
     std::cout << "----------------------------------------\n";
     std::cout << "Genome is part of generation n: " << obsc->generation << ".\n";
-    std::cout << "Genome is part of specie n: " << obsc->specie << ".\n";
+    std::cout << "Genome is part of specie n: " << obsc->species << ".\n";
     int c = obsc->cells.size(), d = obsc->dendrites.size();
     std::cout << "Genome has " << c << " cells.\n";
     for (int i = 0; i < c; ++i) {
 	stat_node(obsc->cells[i]);
     };
-    std::cout << "Genome has " << d << " dendrites, with a maximum of " << obsc->max_dendrites() << ".\n";
+    std::cout << "Genome has " << d << " dendrites, with a maximum of " << max_dendrites(obsc) << ".\n";
     for (int i = 0; i < d; ++i) {
 	stat_den(obsc->dendrites[i]);
     };
@@ -69,6 +72,7 @@ int reckon(std::vector<std::vector<int>> IN, std::vector<std::vector<int>> OU) {
     return 0;
 };
 
+
 std::vector<std::vector<int>> manual_in() {
     int amount, inputs, query;
     std::cout << "Amount of entries: ";
@@ -87,6 +91,7 @@ std::vector<std::vector<int>> manual_in() {
     };
     return vec;
 };
+
 
 std::vector<std::string> process_in() {
     std::vector<std::string> processed;
@@ -133,7 +138,7 @@ void eval(std::vector<std::vector<genome*>> population, std::vector<std::vector<
     for (int i = 0; i < n; ++i) {
 	k = population[i].size();
 	for (int j = 0; j < k; ++j) {
-	    float fit = calc_fit(reference,test_input(population[i][j],input));
+	    float fit = calc_fit(population[i][j],input,reference);
 	    std::cout << "Genome n:" << j << " in species n:" << i << " has a fitness of " << fit << ".\n";
 	    population[i][j]->fitness = fit;
 	};
