@@ -1,17 +1,17 @@
 #include <string>
 #include <iostream>
-#include "objects.h"
+#include "environment.h"
 
 void stat_den(dendrite obsc) {			    // Status of a dendrite
     if (obsc.enabled) {
-	std::cout << "Dendrite number " << obsc.num 
+	std::cout << "Dendrite number " << obsc.historical_num 
 	    << " goes from cell " << obsc.origin
 	    << " to cell " << obsc.dest
 	    << ", has weight " << obsc.weight 
 	    << " and is enabled.\n";
     } else {
 	std::cout << "Dendrite number " 
-	    << obsc.num << " is disabled.\n";
+	    << obsc.historical_num << " is disabled.\n";
     };
 };
 
@@ -41,7 +41,7 @@ void stat_gen(genome* obsc) {			    // Status of a genome
     for (int i = 0; i < c; ++i) {
 	stat_node(obsc->cells[i]);
     };
-    std::cout << "Genome has " << d << " dendrites.\n";
+    std::cout << "Genome has " << d << " dendrites, with a maximum of " << obsc->max_dendrites() << ".\n";
     for (int i = 0; i < d; ++i) {
 	stat_den(obsc->dendrites[i]);
     };
@@ -106,6 +106,7 @@ std::vector<std::string> process_in() {
 
 
 void ls_pop(std::vector<std::vector<genome*>> population) {
+    std::cout << std::endl;
     int n = population.size();
     if (n == 0) {
 	std::printf("The population is empty. Try creating a genome !\n");
@@ -117,27 +118,27 @@ void ls_pop(std::vector<std::vector<genome*>> population) {
 		std::printf("Specie is empty.\n");
 	    } else {
 		for (int j = 0; j < spe_n; ++j) {
-		std::cout << j << " -> Genome ID n: " << population[i][j]->ID << " (" << *population[i][j]->fitness << ")\n";
+		std::cout << j << " -> Genome ID n: " << population[i][j]->ID << " (" << population[i][j]->fitness << ")\n";
 		};
 	    };
 	};
     };
+    std::cout << std::endl;
 };
 
 
-void science(std::vector<std::vector<genome*>> population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> reference) {
+void eval(std::vector<std::vector<genome*>> population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> reference) {
+    std::cout << std::endl;
     int n = population.size(),k;
     for (int i = 0; i < n; ++i) {
 	k = population[i].size();
 	for (int j = 0; j < k; ++j) {
-	    population[i][j]->build();
-	    std::cout << "Genome n:" << j << " has been built.\n";
-	    float fit = calc_fit(reference,population[i][j]->test_input(input));
+	    float fit = calc_fit(reference,test_input(population[i][j],input));
 	    std::cout << "Genome n:" << j << " in species n:" << i << " has a fitness of " << fit << ".\n";
-	    *population[i][j]->fitness = fit;
+	    population[i][j]->fitness = fit;
 	};
     };
-    std::cout << "science done" << std::endl;
+    std::cout << std::endl;
 };
 
 
@@ -156,12 +157,59 @@ void cli(std::vector<std::vector<genome*>> population, std::vector<std::vector<i
 	    ls_pop(population);
 	};
 
-	if (query[0] == "s") {
-	    science(population,input,ref);
+	if (query[0] == "eval") {
+	    eval(population,input,ref);
 	};
 
-	if (query[0] == "b") {
-	    population[0].push_back(breed(population[0][0],population[0][1]));
+	if (query[0] == "build") {
+	    if (query.size() > 2) {
+		int species = stoi(query[1]),index = stoi(query[2]);
+		build(population[species][index]);
+		std::cout << "Genome built.\n" << std::endl;
+	    } else {
+		std::cout << "Usage: build [species] [genome]";
+	    }
+	};
+
+	if (query[0] == "mutate") {
+	    if (query.size() > 2) {
+		int species = stoi(query[1]),index = stoi(query[2]);
+		mutate_weight(population[species][index]);
+		std::cout << "Genome has mutated in weight.\n";
+		stat_gen(population[species][index]);
+	    } else {
+		std::cout << "Usage: mutate [species] [genome]";
+	    }
+	};
+
+	if (query[0] == "m") {
+	    if (query.size() > 2) {
+		int species = stoi(query[1]),index = stoi(query[2]);
+		mutate_add_connection(population[species][index]);
+		stat_gen(population[species][index]);
+	    } else {
+		std::cout << "Usage: m [species] [genome]";
+	    }
+	};
+
+	if (query[0] == "m+") {
+	    if (query.size() > 2) {
+		int species = stoi(query[1]),index = stoi(query[2]);
+		mutate_add_node(population[species][index]);
+		stat_gen(population[species][index]);
+	    } else {
+		std::cout << "Usage: m+ [species] [genome]";
+	    }
+	};
+
+	if (query[0] == "breed") {
+	    if (query.size() > 3) {
+		int species = stoi(query[1]), g1 = stoi(query[2]), g2 = stoi(query[3]);
+		population[species].push_back(breed(population[species][g1],population[species][g2]));
+		std::cout << "New genome appended to species " << query[1] << std::endl << std::endl;
+	    } else {
+		std::cout << "Usage: breed [species] [genome1] [genome2]" << std::endl;
+	    };
 	};
 
 	if (query[0] == "status") {
@@ -169,7 +217,7 @@ void cli(std::vector<std::vector<genome*>> population, std::vector<std::vector<i
 		int sp = std::stoi(query[1]), id = std::stoi(query[2]);
 		stat_gen(population[sp][id]);
 	    } else {
-		std::cout << "Status takes the species and the index of the target genome as arguments." << std::endl;
+		std::cout << "Usage: status [species] [genome]" << std::endl;
 	    };
 	};
     };
