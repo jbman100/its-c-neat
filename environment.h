@@ -3,9 +3,9 @@
 
 
 
-///////////////////////////////////////////////////////////////
-/////////////////////////////// Breeding procedure ////////////
-///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////// Breeding procedure ////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -23,16 +23,14 @@ std::vector<node*> copy_cells(std::vector<node*> c1, std::vector<node*> c2) {
 	p1 = 0;
 	n1 = out.size();
 	while (not inserted) {
-	    if (out[p1]->number == c2[i]->number) { inserted = true; std::cout << "Cell " << c2[i]->number << " already present.\n";};
+	    if (out[p1]->number == c2[i]->number) { inserted = true; };
 	    if (out[p1]->number > c2[i]->number) { 
 		auto it = out.begin();
 		out.insert(it + p1 -1,c2[i]);
-		std::cout << "Inserting cell " << c2[i]->number << " before cell " << out[p1+1]->number << ".\n";
 		inserted = true;
 	    };
 	    if (p1 == n1-1 and not inserted) {
 		out.push_back(c2[i]);
-		std::cout << "Inserting it at the end.\n";
 		inserted = true;
 	    };
 	    ++p1;
@@ -44,41 +42,38 @@ std::vector<node*> copy_cells(std::vector<node*> c1, std::vector<node*> c2) {
 
 std::vector<dendrite> cross(std::vector<dendrite> d1, std::vector<dendrite> d2){
     std::vector<dendrite> d3;
-    int n1 = d1.size(), n2 = d2.size();
-    int p1 = 0, p2 =0;
-    while (p1 < n1 and p2 < n2) {
-	if (d1[p1].historical_num == d2[p2].historical_num) {
-	    int r = std::rand();
-	    if (r%2 == 1) {
-		d3.push_back(d1[p1]);
-	    } else {
-		d3.push_back(d2[p2]);
+    int n1 = d1.size();
+    for (int i = 0; i < n1; ++i) {
+	bool inserted = false;
+	int p2 = 0;
+	while (not inserted) {
+	    if (d1[i].historical_num == d2[p2].historical_num) {
+		int choice = rand() %2;
+		if (choice == 0) {
+		    d3.push_back(d1[i]);
+		} else {
+		    d3.push_back(d2[p2]);
+		}
+		++p2;
+		inserted = true;
 	    };
-	    ++p1;
-	    ++p2;
-	};
-	if (d1[p1].historical_num > d2[p2].historical_num) {
-	    d3.push_back(d2[p2]);
-	    ++p2;
-	};
-	if (d1[p1].historical_num < d2[p2].historical_num) {
-	    d3.push_back(d1[p1]);
-	    ++p1;
-	};
-    };
-    while (p1<n1) {
-	d3.push_back(d1[p1]);
-	++p1;
-    };
-    while (p2<n2) {
-	d3.push_back(d2[p2]);
-	++p2;
-    };
+	    if (d1[i].historical_num > d2[p2].historical_num and not inserted) {
+		++p2;
+	    }
+	    if (d1[i].historical_num < d2[p2].historical_num and not inserted) {
+		d3.push_back(d1[i]);
+		inserted = true;
+	    }
+	}
+    }
     return d3;
 };
 
 
-genome* breed(genome *g1, genome *g2) {
+genome* breed(genome* g1, genome* g2) {
+    if (g1->fitness < g2->fitness) {
+	return breed(g2,g1);
+    };
     std::vector<node*> g3_nod {};
     std::vector<dendrite> g3_den {};
     g3_nod = copy_cells(g1->cells,g2->cells);
@@ -88,12 +83,12 @@ genome* breed(genome *g1, genome *g2) {
 
 
 
-///////////////////////////////////////////////////////////////
-/////////////////////////////// Mutations /////////////////////
-///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////// Mutations /////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-/////////////////////////////// Weight mutation ///////////////
+/////////////////////////////// Weight mutation ///////////////////////////////////////////////
 
 
 void mutate_weight(genome* specimen) {
@@ -120,7 +115,7 @@ void mutate_weight(genome* specimen) {
 };
 
 
-/////////////////////////////// Adding a node /////////////////
+/////////////////////////////// Adding a node /////////////////////////////////////////////////
 
 
 void mutate_add_node(genome* specimen) {
@@ -146,7 +141,7 @@ void mutate_add_node(genome* specimen) {
 }
 
 
-/////////////////////////////// Adding a dendrite /////////////
+/////////////////////////////// Adding a dendrite /////////////////////////////////////////////
 
 
 std::pair<int,int> random_pair(std::vector<int> first_members, std::vector<int> second_members) {
@@ -197,4 +192,93 @@ void mutate_add_connection(genome* specimen) {
 	specimen->dendrites.push_back(dendrite (potent.first,potent.second,weight,true));
 	std::cout << "Genome has mutated in structure.\n";
     };
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////// Speciation procedure //////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+std::vector<std::vector<int>> extract (std::vector<dendrite> d1, std::vector<dendrite> d2) { 
+
+    if (d1.back().historical_num < d2.back().historical_num) {
+	return extract(d2,d1);
+    }
+
+    std::vector<int> matching;
+    std::vector<int> excess;
+    std::vector<int> disjoint;
+    int p1 = 0, n1 = d1.size(), n2 = d2.size();
+    for (int i = 0; i < n2; ++i) { 
+        bool inserted = false;
+        while (not inserted and p1 < n1) { 
+            std::cout << p1 << " / " << i << "\n";
+
+            if (d1[p1].historical_num == d2[i].historical_num) { 
+                matching.push_back(d1[p1].historical_num);
+                ++p1;
+                inserted = true;
+            } 
+
+            if (d1[p1].historical_num > d2[i].historical_num and not inserted) { 
+                disjoint.push_back(d2[i].historical_num);
+                inserted = true;
+            } 
+
+            if (d1[p1].historical_num < d2[i].historical_num and not inserted) { 
+                disjoint.push_back(d1[p1].historical_num);
+                ++p1;
+            } 
+        } 
+    } 
+    for (int i = p1; i < n1; ++i) { 
+        excess.push_back(d1[i].historical_num);
+    } 
+    return {matching,excess,disjoint};
+}
+
+
+float compatibility (genome* g1, genome* g2, int c1, int c2, int c3) {
+
+    int N;
+    if (g1->dendrites.size() > g2->dendrites.size()) { N = g1->dendrites.size(); }
+    else { N = g2->dendrites.size(); }
+    
+    std::vector<std::vector<int>> indexes = extract(g1->dendrites, g2->dendrites);
+    int E = indexes[1].size(), D = indexes[2].size();
+
+    float W = 0;
+    int n = indexes[0].size();
+    for (int i = 0; i < n; ++i) {
+	int w1,w2;
+	for (int j = 0; j < (int)g1->dendrites.size(); ++j) {
+	    if (g1->dendrites[j].historical_num == indexes[0][i]) { w1 = g1->dendrites[j].weight; }
+	}
+	for (int j = 0; j < (int)g2->dendrites.size(); ++j) {
+	    if (g2->dendrites[j].historical_num == indexes[0][i]) { w2 = g2->dendrites[j].weight; }
+	}
+	W = W + std::abs(w2-w1);
+    }
+
+    W = W/n;
+    return (c1*E + c2*D)/N + c3*W;
+}
+
+
+void categorize(genome* specimen, std::vector<species*>* population) {
+    int n = population->size();
+    bool inserted = false;
+    if (n > 0) {
+	for (int i = 0; i < n; ++i) {
+	    if (compatibility(specimen, (*population)[i]->alpha_g, exw, diw, avw) < delta and not inserted) {
+		(*population)[i]->members.push_back(specimen);
+		std::cout << "Genome inserted in species " << i << "\n";
+		inserted = true;
+	    }
+	}
+    }
+    if (not inserted) { population->push_back(new species(specimen)); std::cout << "New species created.\n"; }
 }
