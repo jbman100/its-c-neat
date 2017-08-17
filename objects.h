@@ -4,9 +4,11 @@
 
 
 
-int Hnum, nid, gid, genid;			    // Historical number initialization, with the same for nodes
+int Hnum = 0, nid = 0, gid = 0, genid = 0, sid = 0; // Historical number initialization, with the same for nodes
 int struct_prob = 25, weight_prob = 50;		    // Pobabilities of mutation
 bool verbose = false;				    // Verbosity level of the algorithm
+
+float exw = 1, diw = 1, avw = 1, delta = 1;
 
 int input_nb = 2, output_nb = 1;
 
@@ -145,6 +147,16 @@ void build(genome* specimen) {			    // Build the network according to the dendr
 };
 
 
+void kill(genome* specimen) {
+
+    int n = specimen->cells.size();
+    for (int i = n-1; i >= 0; --i) {
+	delete specimen->cells[i];
+    }
+    delete specimen;
+}
+
+
 std::vector<std::vector<int>> test_input(genome* specimen, std::vector<std::vector<int>> IN) {
     std::vector<std::vector<int>> OU;
     for (int k = 0; k < (int)IN.size(); ++k) {
@@ -177,4 +189,20 @@ float calc_fit(genome* specimen, std::vector<std::vector<int>> input, std::vecto
 	fitness = fitness - std::sqrt(pow(sum,2));
     };
     return fitness;
+};
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Species class ////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+class species {
+    public:
+	int const ID = sid;
+	std::vector<genome*> members = {};
+	genome* alpha_g;
+	species(genome* g) : alpha_g(g) { ++sid; members.push_back(alpha_g); }
 };
