@@ -126,9 +126,9 @@ void ls_pop(std::vector<species*>* population) {
 		std::cout << j << " -> Genome ID n: " << (*population)[i]->members[j]->ID << " (" << (*population)[i]->members[j]->fitness << ")\n";
 		};
 	    };
+	    std::cout << std::endl;
 	};
     };
-    std::cout << std::endl;
 };
 
 

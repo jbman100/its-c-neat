@@ -155,9 +155,11 @@ std::pair<int,int> random_pair(std::vector<int> first_members, std::vector<int> 
 
 void mutate_add_connection(genome* specimen) {
     std::cout << "Adding new dendrite to genome ID n:" << specimen->ID << " ...\n";
+
     if ((int)specimen->dendrites.size() >= max_dendrites(specimen)) {
 	std::cout << "No more dendrites can be added.\n";
     } else {
+
 	int n = specimen->dendrites.size();
 	std::vector<std::pair<int,int>> existing;
 	existing.push_back(std::pair<int,int> (0,0));
@@ -202,10 +204,10 @@ void mutate_add_connection(genome* specimen) {
 
 
 
-std::vector<std::vector<int>> extract (std::vector<dendrite> d1, std::vector<dendrite> d2) { 
+std::vector<std::vector<int>> sort_dendrites (std::vector<dendrite> d1, std::vector<dendrite> d2) { 
 
     if (d1.back().historical_num < d2.back().historical_num) {
-	return extract(d2,d1);
+	return sort_dendrites(d2,d1);
     }
 
     std::vector<int> matching;
@@ -215,7 +217,6 @@ std::vector<std::vector<int>> extract (std::vector<dendrite> d1, std::vector<den
     for (int i = 0; i < n2; ++i) { 
         bool inserted = false;
         while (not inserted and p1 < n1) { 
-            std::cout << p1 << " / " << i << "\n";
 
             if (d1[p1].historical_num == d2[i].historical_num) { 
                 matching.push_back(d1[p1].historical_num);
@@ -247,7 +248,7 @@ float compatibility (genome* g1, genome* g2, int c1, int c2, int c3) {
     if (g1->dendrites.size() > g2->dendrites.size()) { N = g1->dendrites.size(); }
     else { N = g2->dendrites.size(); }
     
-    std::vector<std::vector<int>> indexes = extract(g1->dendrites, g2->dendrites);
+    std::vector<std::vector<int>> indexes = sort_dendrites(g1->dendrites, g2->dendrites);
     int E = indexes[1].size(), D = indexes[2].size();
 
     float W = 0;
@@ -274,6 +275,7 @@ void categorize(genome* specimen, std::vector<species*>* population) {
     if (n > 0) {
 	for (int i = 0; i < n; ++i) {
 	    if (compatibility(specimen, (*population)[i]->alpha_g, exw, diw, avw) < delta and not inserted) {
+		specimen->species = i;
 		(*population)[i]->members.push_back(specimen);
 		std::cout << "Genome inserted in species " << i << "\n";
 		inserted = true;
