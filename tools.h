@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include "mutation.h"
+#include "breeding.h"
 #include "environment.h"
 
 
