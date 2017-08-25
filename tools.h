@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include "mutation.h"
 #include "environment.h"
 
 
@@ -117,10 +118,10 @@ void ls_pop(std::vector<species*>* population) {
 	std::printf("The population is empty. Try creating a genome !\n");
     } else {
 	for (int i = 0; i < n; ++i) {
-	    std::cout << "___ Specie n: " << i << " ___\n";
+	    std::cout << "___ Species n: " << i << " ___\n";
 	    int spe_n = (*population)[i]->members.size();
 	    if (spe_n == 0) {
-		std::printf("Specie is empty.\n");
+		std::printf("Species is empty.\n");
 	    } else {
 		for (int j = 0; j < spe_n; ++j) {
 		std::cout << j << " -> Genome ID n: " << (*population)[i]->members[j]->ID << " (" << (*population)[i]->members[j]->fitness << ")\n";
@@ -138,7 +139,7 @@ void eval(std::vector<species*>* population, std::vector<std::vector<int>> input
     for (int i = 0; i < n; ++i) {
 	k = (*population)[i]->members.size();
 	for (int j = 0; j < k; ++j) {
-	    float fit = calc_fit((*population)[i]->members[j],input,reference);
+	    float fit = calc_fit((*population)[i]->members[j], input, reference, population);
 	    std::cout << "Genome n:" << j << " in species n:" << i << " has a fitness of " << fit << ".\n";
 	    (*population)[i]->members[j]->fitness = fit;
 	};
@@ -166,6 +167,10 @@ void cli(std::vector<species*>* population, std::vector<std::vector<int>> input,
 	    eval(population,input,ref);
 	};
 
+	if (query[0] == "it") {
+	    iterate(population);
+	};
+
 	if (query[0] == "build") {
 	    if (query.size() > 2) {
 		int species = stoi(query[1]),index = stoi(query[2]);
@@ -190,7 +195,7 @@ void cli(std::vector<species*>* population, std::vector<std::vector<int>> input,
 	if (query[0] == "m") {
 	    if (query.size() > 2) {
 		int species = stoi(query[1]),index = stoi(query[2]);
-		mutate_add_connection((*population)[species]->members[index]);
+		mutate_add_connection((*population)[species]->members[index], {});
 		stat_gen((*population)[species]->members[index]);
 	    } else {
 		std::cout << "Usage: m [species] [genome]";
@@ -220,7 +225,6 @@ void cli(std::vector<species*>* population, std::vector<std::vector<int>> input,
 	    if (query.size() > 3) {
 		int species = stoi(query[1]), g1 = stoi(query[2]), g2 = stoi(query[3]);
 		categorize(breed((*population)[species]->members[g1],(*population)[species]->members[g2]), population);
-		std::cout << "New genome appended to species " << query[1] << std::endl << std::endl;
 	    } else {
 		std::cout << "Usage: breed [species] [genome1] [genome2]" << std::endl;
 	    };
