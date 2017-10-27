@@ -8,6 +8,7 @@ bool verbose = true;                               // Verbosity level of the alg
 int input_nb = 2, output_nb = 1;
 
 int max_population = 10;
+float *population_average = new float;
 
 std::vector<species*>* population = new std::vector<species*>;
 std::vector<std::vector<int>> input {{1,0},{0,1},{1,1},{0,0}};

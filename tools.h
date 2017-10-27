@@ -1,8 +1,6 @@
 #include <string>
 #include <iostream>
-#include "mutation.h"
-#include "breeding.h"
-#include "environment.h"
+#include "evolution.h"
 
 
 void stat_den(dendrite obsc) {			    // Status of a dendrite
@@ -112,12 +110,13 @@ std::vector<std::string> process_in() {
 };
 
 
-void ls_pop(std::vector<species*>* population) {
+void ls_pop(pop population) {
     std::cout << std::endl;
     int n = population->size();
     if (n == 0) {
 	std::printf("The population is empty. Try creating a genome !\n");
     } else {
+	std::cout << "The average fitness is " << *population_average << std::endl << std::endl;
 	for (int i = 0; i < n; ++i) {
 	    std::cout << "___ Species n: " << i << " ___\n";
 	    int spe_n = (*population)[i]->members.size();
@@ -134,7 +133,7 @@ void ls_pop(std::vector<species*>* population) {
 };
 
 
-void eval(std::vector<species*>* population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> reference) {
+void eval(pop population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> reference) {
     std::cout << std::endl;
     int n = population->size(),k;
     for (int i = 0; i < n; ++i) {
@@ -149,7 +148,7 @@ void eval(std::vector<species*>* population, std::vector<std::vector<int>> input
 };
 
 
-void cli(std::vector<species*>* population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> ref) {
+void cli(pop population, std::vector<std::vector<int>> input, std::vector<std::vector<int>> ref) {
     bool finished = false;
     while (!finished) {
 	std::vector<std::string> query;
@@ -200,16 +199,6 @@ void cli(std::vector<species*>* population, std::vector<std::vector<int>> input,
 		stat_gen((*population)[species]->members[index]);
 	    } else {
 		std::cout << "Usage: m [species] [genome]";
-	    }
-	};
-
-	if (query[0] == "m+") {
-	    if (query.size() > 2) {
-		int species = stoi(query[1]),index = stoi(query[2]);
-		mutate_add_node((*population)[species]->members[index]);
-		stat_gen((*population)[species]->members[index]);
-	    } else {
-		std::cout << "Usage: m+ [species] [genome]";
 	    }
 	};
 

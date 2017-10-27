@@ -1,9 +1,17 @@
+//         _     _           _         _    
+//    ___ | |__ (_) ___  ___| |_ ___  | |__  
+//   / _ \| '_ \| |/ _ \/ __| __/ __| | '_ | 
+//  | (_) | |_) | |  __/ (__| |_\__ \_| | | |
+//   \___/|_.__// |\___|\___|\__|___(_)_| |_|
+//            |__/                           
+
+#ifndef OBJECTS_H
+#define OBJECTS_H
+
 #include <iostream>
 #include <cmath>
 #include <vector>
 
-#ifndef OBJECTS_H
-#define OBJECTS_H
 
 extern int Hnum, nid, gid, genid, sid; // Historical number initialization, with the same for nodes
 extern int addNodeProb, addDendriteProb, changeWeightProb;		    // Pobabilities of mutation
@@ -11,7 +19,7 @@ extern bool verbose;				    // Verbosity level of the algorithm
 
 extern int input_nb, output_nb;
 
-
+extern float* population_average;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Node class ////////////////////////////////////////////////////
@@ -27,6 +35,7 @@ class node {					    // Defines nodes adapted to the issue at hand
 	float bias;				    // The node's bias
 	char const type;
 	node(int n, float b, char c) : number(n), bias (b), type(c){};
+	node(int n) : number(n), value(0), type('h') {};
 
 	std::vector<std::pair<node*,float>> peers;  // This vector holds information about the NE structure
 	float transfer(float);			    // The transfer function on the node
@@ -80,8 +89,13 @@ class genome {					    // A genome is a collenction of nodes and dendrites
 class species {
     public:
 	int const ID = sid;
+	int allowed_offspring = 2;
+	float average_fitness = 0;
 	std::vector<genome*> members = {};
 	genome* alpha_g;
+
+	void calc_average();
+
 	species(genome* g) : alpha_g(g) { ++sid; members.push_back(alpha_g); }
 };
 
@@ -92,6 +106,7 @@ class species {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
+typedef std::vector<species*>* pop;
 
 int enabled_dendrites(genome*);
 

@@ -35,13 +35,12 @@ void mutate_weight(genome* specimen) {
 /////////////////////////////// Adding a node /////////////////////////////////////////////////
 
 
-void mutate_add_node(genome* specimen) {
+std::vector<std::pair<int,int>> mutate_add_node(genome* specimen, std::vector<std::pair<int,int>> record) {
     int instance = rand() %100;
     if (instance < addNodeProb) {
 	std::cout << "Adding new node to genome ID n:" << specimen->ID << " ...\n";
 	int n = specimen->dendrites.size();
 	std::vector<std::pair<int,int>> existing;
-	existing.push_back(std::pair<int,int> (0,0));
 	for (int i = 0; i < n; ++i) {		    //List existing connections
 	    if (specimen->dendrites[i].enabled) {
 		std::pair<int,int> connection;
@@ -52,18 +51,35 @@ void mutate_add_node(genome* specimen) {
 	}
 	n = existing.size();
 	if (n > 0) {
-	    int choice = rand() %(n-1) +1;
+	    int choice = rand() %n;
 	    std::pair<int,int> to_replace = existing[choice];
-	    specimen->dendrites[choice - 1].enabled = false;
-	    specimen->cells.push_back(new node (nid,0,'h'));
-	    specimen->dendrites.push_back(dendrite(to_replace.first, nid, 1));
-	    specimen->dendrites.push_back(dendrite(nid, to_replace.second, specimen->dendrites[choice-1].weight));
-	    ++nid;
-	    std::cout << "Genome gained a node.\n";
+	    specimen->dendrites[choice].enabled = false;
+	    bool original = true;
+
+	    for (int i = 0; i < (int)record.size(); ++i) {
+		if (record[i].first == specimen->dendrites[choice].historical_num) {
+		    original = false;
+		    int target_nid = record[i].second;
+		    specimen->cells.push_back(new node (target_nid));
+		    specimen->dendrites.push_back(dendrite(to_replace.first, target_nid, 1));
+		    specimen->dendrites.push_back(dendrite(target_nid, to_replace.second, specimen->dendrites[choice-1].weight));
+		}
+	    }
+
+	    if (original) {
+		record.push_back(std::make_pair(specimen->dendrites[choice].historical_num,nid));
+		specimen->cells.push_back(new node (nid,0,'h'));
+		specimen->dendrites.push_back(dendrite(to_replace.first, nid, 1));
+		specimen->dendrites.push_back(dendrite(nid, to_replace.second, specimen->dendrites[choice-1].weight));
+		++nid;
+	    }
+
+	    std::cout << "Genome gained a node. NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\n";
 	} else {
 	    std::cout << "No connections could be replaced.\n";
 	}
     }
+    return record;
 }
 
 
@@ -137,7 +153,7 @@ std::vector<std::pair<std::pair<int,int>,int>> mutate_add_connection(genome* spe
 	    } else {
 		specimen->dendrites.push_back(dendrite(hnum,potent.first,potent.second,weight));
 	    }
-	    std::cout << "Genome has mutated in structure.\n";
+	    std::cout << "Genome gained a dendrite. DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n";
 	}
     }
     return record;
@@ -148,10 +164,11 @@ std::vector<std::pair<std::pair<int,int>,int>> mutate_add_connection(genome* spe
 
 
 void mutate(std::vector<genome*> offspring) {
-    std::vector<std::pair<std::pair<int,int>,int>> record;
+    std::vector<std::pair<std::pair<int,int>,int>> record_dendrites;
+    std::vector<std::pair<int,int>> record_nodes;
     for (int i = 0; i < (int)offspring.size(); ++i) {
 	mutate_weight(offspring[i]);
-	record = mutate_add_connection(offspring[i],record);
-	mutate_add_node(offspring[i]);
+	record_dendrites = mutate_add_connection(offspring[i],record_dendrites);
+	record_nodes = mutate_add_node(offspring[i], record_nodes);
     }
 }

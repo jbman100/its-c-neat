@@ -1,5 +1,6 @@
 #include "objects.h"
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Node class ////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -7,24 +8,34 @@
 
 
 float node::transfer(float input) {
-    return (1/(1+std::exp(input*-4)));	    // A simple transfer function.
+    float out = (1/(1+std::exp(input*-4)));		    // A simple transfer function.
+
+    if (out > 0.9) { return 1; }
+    else { return 0; }
 };
 
 
 float node::get_value(bool verbose) {
-    if (evaluated) {				    // If previously evaluated: just output the value
+
+    if (node::evaluated) {			    // If previously evaluated: just output the value
+	std::cout << "Node " << number << " has a value of " << value << std::endl;
 	return value;
-    } else {
+    }
+    
+    else {
+	value = 0;
+
 	for (int i = 0; i < (int)peers.size(); ++i) {
 	    value = value + (*peers[i].first).get_value(verbose)*(peers[i].second);
-	};
-	value = value + bias;
+	}
+
 	if (verbose) {std::cout << "Node " << number <<
-	    "'s value is " << value <<
-		" so it outputs " << transfer(value)
+	    "'s value is " << value + bias <<
+		" so it outputs " << transfer(value + bias)
 		<< "\n";
 	}
-	value = transfer(value);
+
+	value = transfer(value + bias);
 	evaluated = true;
 	return value;
     };
@@ -92,18 +103,24 @@ void kill(genome* specimen) {
 
 std::vector<std::vector<int>> test_input(genome* specimen, std::vector<std::vector<int>> IN) {
     std::vector<std::vector<int>> OU;
+
     for (int k = 0; k < (int)IN.size(); ++k) {
+
 	std::vector<int> tmp;
+
 	for (int i = 0; i < specimen->first_output; ++i) {  // This supposes that the list is equal in length
 	    specimen->cells[i]->value = IN[k][i];	    // to the number of inputs, and assign them values
 	    specimen->cells[i]->evaluated = true;	    // Flag to avoid calculating an inputs value
 	};
+
 	for (int i = specimen->first_output; i < specimen->first_hidden; ++i) {
 	    tmp.push_back(specimen->cells[i]->get_value(verbose));
 	};
+
 	OU.push_back(tmp);
-	for (int i = 0; i < (int)specimen->cells.size(); ++i) {
-	specimen->cells[i]->evaluated = false;
+
+	for (int i = specimen->first_output; i < (int)specimen->cells.size(); ++i) {
+	    specimen->cells[i]->evaluated = false;
 	};
     };
     return OU;
@@ -123,3 +140,22 @@ float calc_fit(genome* specimen, std::vector<std::vector<int>> input, std::vecto
     };
     return pow(fitness,2)/(*population)[specimen->species]->members.size();
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void species::calc_average() {
+    float sum = 0.0;
+    int n = members.size();
+    for (int i = 0; i < n; ++i) {
+	sum = sum + members[i]->fitness;
+    }
+    average_fitness = sum/n;
+}
+
+void coitus_allowance(pop population, float population_average){
+    int n = population->size();
+    for (int i = 0; i < n; ++i) {
+	(*population)[i]->allowed_offspring = (int)(*population)[i]->average_fitness/population_average;
+    }
+}
